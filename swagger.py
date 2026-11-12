@@ -117,6 +117,15 @@ SPEC = {
                 "summary": "Get a member",
                 "responses": {"200": _json(_ref("Member"), "The member"), "404": _error("Member not found")},
             },
+            "delete": {
+                "tags": ["Members"],
+                "summary": "Delete a member with no open loans and nothing owed",
+                "responses": {
+                    "204": {"description": "Member and their loan history deleted"},
+                    "404": _error("Member not found"),
+                    "409": _error("Member has books on loan or owes money"),
+                },
+            },
         },
         "/members/{member_id}/loans": {
             "parameters": [MEMBER_ID],

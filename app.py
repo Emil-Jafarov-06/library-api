@@ -211,6 +211,27 @@ def create_member():
     return jsonify({"id": r[0], "name": r[1], "email": r[2], "type": r[3]}), 201
 
 
+@app.route("/members/<int:member_id>", methods=["DELETE"])
+def delete_member(member_id):
+    conn = sqlite3.connect("library.db")
+    m = conn.execute("SELECT * FROM members WHERE id = ?", (member_id,)).fetchone()
+    if m is None:
+        conn.close()
+        return jsonify({"error": "member not found"}), 404
+    loans = conn.execute("SELECT * FROM loans WHERE member_id = ?", (member_id,)).fetchall()
+    if any(loan[4] == 0 for loan in loans):
+        conn.close()
+        return jsonify({"error": "member has books on loan"}), 409
+    if sum(balance_owed(loan[3], loan[4], loan[5], loan[6]) for loan in loans) > 0:
+        conn.close()
+        return jsonify({"error": "member owes money"}), 409
+    conn.execute("DELETE FROM loans WHERE member_id = ?", (member_id,))
+    conn.execute("DELETE FROM members WHERE id = ?", (member_id,))
+    conn.commit()
+    conn.close()
+    return "", 204
+
+
 @app.route("/members/<int:member_id>/loans", methods=["GET"])
 def member_loans(member_id):
     conn = sqlite3.connect("library.db")

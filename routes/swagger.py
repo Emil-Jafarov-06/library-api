@@ -1,8 +1,3 @@
-"""OpenAPI spec and Swagger UI for the Library API.
-
-Serves the spec at /openapi.json and the interactive UI at /docs.
-Swagger UI assets are loaded from a CDN, so no extra Python dependency is needed.
-"""
 from flask import Blueprint, jsonify
 
 swagger_bp = Blueprint("swagger", __name__)

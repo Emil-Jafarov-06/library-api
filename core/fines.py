@@ -13,3 +13,7 @@ def fine_for(due_date):
 
 def money(amount):
     return round(float(amount), 2)
+
+
+def current_fine(loan):
+    return loan.fine if loan.returned else fine_for(loan.due_date)

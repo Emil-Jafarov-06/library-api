@@ -3,46 +3,18 @@ from datetime import date, timedelta
 from repositories import book_repository
 from repositories import loan_repository
 from repositories import member_repository
+from core import checks
 from core import fines
 from core import notifications
 from core import validation
 from core.errors import bad_request, not_found, conflict
 
 LOAN_DAYS = 14
-STUDENT_LIMIT = 3
-STAFF_LIMIT = 5
-MAX_RENEWALS = 1
-
-
-def amount_owed(loan):
-    if not loan.returned:
-        return fines.fine_for(loan.due_date)
-    return 0 if loan.fine_paid else loan.fine
-
-
-def total_owed(loans):
-    return sum(amount_owed(loan) for loan in loans)
-
-
-def count_open_loans(loans):
-    return sum(1 for loan in loans if not loan.returned)
-
-
-def loan_limit(member):
-    return STAFF_LIMIT if member.type == "staff" else STUDENT_LIMIT
-
-
-def current_fine(loan):
-    return loan.fine if loan.returned else fines.fine_for(loan.due_date)
-
-
-def is_overdue(loan):
-    return not loan.returned and fines.days_late(loan.due_date) > 0
 
 
 def list_loans(only_overdue):
     allLoans = loan_repository.list_loans()
-    return [loan for loan in allLoans if is_overdue(loan)] if only_overdue else allLoans
+    return [loan for loan in allLoans if checks.is_overdue(loan)] if only_overdue else allLoans
 
 
 def get_loan(loan_id):
@@ -70,9 +42,9 @@ def create_loan(data):
         raise conflict("book is not available")
 
     memberLoans = loan_repository.list_loans_for_member(memberId)
-    if total_owed(memberLoans) > 0:
+    if checks.owes_money(memberLoans):
         raise conflict("member has unpaid fines")
-    if count_open_loans(memberLoans) >= loan_limit(member):
+    if checks.reached_loan_limit(member, memberLoans):
         raise conflict("loan limit reached")
 
     today = date.today()
@@ -104,13 +76,12 @@ def renew_loan(loan_id):
     if loan.returned:
         raise conflict("loan already returned")
 
-    dueDate = date.fromisoformat(loan.due_date)
-    if dueDate < date.today():
+    if checks.is_past_due_date(loan):
         raise conflict("overdue loans cannot be renewed")
-    if loan.renewals >= MAX_RENEWALS:
+    if checks.was_renewed(loan):
         raise conflict("loan was already renewed")
 
-    updatedLoan = loan_repository.extend_loan(loan_id, (dueDate + timedelta(days=LOAN_DAYS)).isoformat())
+    updatedLoan = loan_repository.extend_loan(loan_id, (date.fromisoformat(loan.due_date) + timedelta(days=LOAN_DAYS)).isoformat())
 
     member = member_repository.get_member(loan.member_id)
     book = book_repository.get_book(loan.book_id)
@@ -122,7 +93,7 @@ def pay_fine(loan_id):
     loan = get_loan(loan_id)
     if not loan.returned:
         raise conflict("return the book before paying")
-    if loan.fine <= 0 or loan.fine_paid:
+    if not checks.has_fine_to_pay(loan):
         raise conflict("no fine to pay")
 
     updatedLoan = loan_repository.mark_fine_paid(loan_id)

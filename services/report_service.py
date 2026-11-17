@@ -1,7 +1,7 @@
 from repositories import report_repository
 from repositories import book_repository
 from repositories import loan_repository
-from services import loan_service
+from core import checks
 from core import fines
 
 
@@ -25,6 +25,6 @@ def summary_report():
     loans = loan_repository.list_loans()
     return {
         "total_books": book_repository.count_books(),
-        "on_loan": loan_service.count_open_loans(loans),
-        "fines_outstanding": fines.money(loan_service.total_owed(loans)),
+        "on_loan": checks.count_open_loans(loans),
+        "fines_outstanding": fines.money(checks.total_owed(loans)),
     }

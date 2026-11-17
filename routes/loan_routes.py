@@ -21,7 +21,7 @@ def loan_json(loan):
 
 
 def loan_with_fine_json(loan):
-    return {**loan_json(loan), "current_fine": fines.money(loan_service.current_fine(loan))}
+    return {**loan_json(loan), "current_fine": fines.money(fines.current_fine(loan))}
 
 
 @bp.route("/loans", methods=["GET"])

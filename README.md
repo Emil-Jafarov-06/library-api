@@ -121,4 +121,4 @@ core/db.py     opens the database
 | Loans | `loan_routes.py` | `loan_service.py` | `loan_repository.py` | `models/loan.py` |
 | Reports | `report_routes.py` | `report_service.py` | `report_repository.py` | none |
 
-Shared code lives in `core/`: `db.py` (connection and seed data), `errors.py`, `validation.py`, `fines.py` (the fine rate) and `notifications.py` (writes to `outbox.txt`).
+Shared code lives in `core/`: `db.py` (connection and seed data), `errors.py` (`LibraryError`, `error(message, status)` and the JSON error handler), `validation.py` (input formats), `checks.py` (library rule checks: loan limits, unpaid fines, renewals), `fines.py` (fine calculation) and `notifications.py` (`MockEmailNotifier`, a mock mail sender that records each message and writes it to `outbox.txt`).
